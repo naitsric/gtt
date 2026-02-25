@@ -8,17 +8,17 @@ $ gtt report --client "Startup X" --last-month
 Client: Startup X
 Period: 01/01/2026 — 01/31/2026
 
-+-----------+----------+--------+---------+------------+----------------------------+
-| Date      | Sessions | Hours  | Commits | +/-        | Repos                      |
-+-----------+----------+--------+---------+------------+----------------------------+
-| Mon 01/05 |        2 | 3h 15m |       5 | +320 -45   | startupx-web               |
-| Tue 01/06 |        1 | 1h 40m |       3 | +85 -12    | startupx-api               |
-| Wed 01/07 |        3 | 4h 50m |       8 | +410 -130  | startupx-web, startupx-api |
-| Fri 01/09 |        1 | 2h 10m |       4 | +150 -30   | startupx-web               |
-| Total     |        7 | 11h 55m|      20 | +965 -217  |                            |
-+-----------+----------+--------+---------+------------+----------------------------+
++-----------+----------+--------+---------+------------+-------+----------------------------+
+| Date      | Sessions | Hours  | Commits | +/-        | LLM   | Repos                      |
++-----------+----------+--------+---------+------------+-------+----------------------------+
+| Mon 01/05 |        2 | 3h 15m |       5 | +320 -45   |  1.83 | startupx-web               |
+| Tue 01/06 |        1 | 1h 40m |       3 | +85 -12    |  0.49 | startupx-api               |
+| Wed 01/07 |        3 | 4h 50m |       8 | +410 -130  |  2.70 | startupx-web, startupx-api |
+| Fri 01/09 |        1 | 2h 10m |       4 | +150 -30   |  0.90 | startupx-web               |
+| Total     |        7 | 11h 55m|      20 | +965 -217  |  5.91 |                            |
++-----------+----------+--------+---------+------------+-------+----------------------------+
 
-Amount: 11.92h × 80/h = 953.33 USD
+Amount: 11.92h × 80/h = 953.33 USD  +  LLM: 5.91 USD  =  Total: 959.24 USD
 ```
 
 ---
@@ -124,6 +124,7 @@ repos = [
 ]
 hourly_rate = 80
 currency = "USD"
+llm_cost_per_kloc = 5.0      # USD per 1000 lines changed (to offset LLM usage)
 
 [client."Agency Y"]
 repos = ["/home/user/agency-landing"]
@@ -138,6 +139,15 @@ volume_adjustment = true     # adjust time estimates based on code volume
 volume_factor = 5.0          # bonus scaling (minutes per ln-unit of volume)
 volume_scale = 50.0          # normalization: lines changed divisor
 ```
+
+### `[client.*]` Options
+
+| Option | Default | Description |
+|---|---|---|
+| `repos` | — | List of repository paths for this client |
+| `hourly_rate` | `0.0` | Billing rate per hour |
+| `currency` | `"USD"` | Currency code shown in reports |
+| `llm_cost_per_kloc` | `0.0` | Extra charge per 1000 lines changed to offset LLM usage. Set to `0` to disable. |
 
 ### `[settings]` Options
 
@@ -334,9 +344,9 @@ Total:     2h 50m
 Compatible with FreshBooks, Wave, Invoice Ninja, and any spreadsheet.
 
 ```csv
-date,sessions,hours,minutes,commits,repos,amount,currency,lines_added,lines_deleted
-2026-01-05,2,3.2500,195,5,startupx-web,260.00,USD,320,45
-2026-01-06,1,1.6667,100,3,startupx-api,133.33,USD,85,12
+date,sessions,hours,minutes,commits,repos,amount,llm_cost,total_amount,currency,lines_added,lines_deleted
+2026-01-05,2,3.2500,195,5,startupx-web,260.00,1.83,261.83,USD,320,45
+2026-01-06,1,1.6667,100,3,startupx-api,133.33,0.49,133.82,USD,85,12
 ```
 
 ### JSON
@@ -392,6 +402,28 @@ currency = "USD"
 ```
 
 Commits from all repos are combined, and sessions are detected across them. A commit to `api` and a commit to `web` 40 minutes apart are part of the same session.
+
+### LLM Cost Recovery
+
+If you use AI assistants (Claude, Copilot, etc.) while working for a client, you can pass that cost through automatically based on code volume:
+
+```toml
+[client."Startup X"]
+repos = ["/home/user/startupx-web"]
+hourly_rate = 80
+currency = "USD"
+llm_cost_per_kloc = 5.0   # $5 per 1000 lines changed
+```
+
+A day with 1,200 lines changed adds `(1200 / 1000) × 5.0 = $6.00` to the invoice. The `LLM` column appears in the table and the summary line shows the breakdown:
+
+```
+Amount: 8.00h × 80/h = 640.00 USD  +  LLM: 6.00 USD  =  Total: 646.00 USD
+```
+
+The `llm_cost` and `total_amount` columns are also included in CSV exports. Set `llm_cost_per_kloc = 0` (or omit it) to disable the feature entirely.
+
+---
 
 ### Billing Workflows
 
