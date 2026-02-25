@@ -52,6 +52,10 @@ pub struct ClientReport {
     pub currency: String,
     pub total_lines_added: u32,
     pub total_lines_deleted: u32,
+    /// Cost per 1000 lines changed to offset LLM usage (0.0 = disabled)
+    pub llm_cost_per_kloc: f64,
+    /// Total LLM cost for the period
+    pub llm_cost: f64,
 }
 
 impl ClientReport {
@@ -61,5 +65,9 @@ impl ClientReport {
 
     pub fn billable_amount(&self) -> f64 {
         self.total_hours() * self.hourly_rate
+    }
+
+    pub fn total_amount(&self) -> f64 {
+        self.billable_amount() + self.llm_cost
     }
 }

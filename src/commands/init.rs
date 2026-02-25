@@ -76,6 +76,7 @@ pub fn run() -> Result<()> {
                 repos,
                 hourly_rate: rate,
                 currency,
+                llm_cost_per_kloc: 0.0,
             },
         );
 

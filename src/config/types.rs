@@ -17,6 +17,9 @@ pub struct ClientConfig {
     pub hourly_rate: f64,
     #[serde(default = "default_currency")]
     pub currency: String,
+    /// Cost per 1000 lines changed to offset LLM usage (default 0.0 = disabled)
+    #[serde(default)]
+    pub llm_cost_per_kloc: f64,
 }
 
 fn default_hourly_rate() -> f64 {

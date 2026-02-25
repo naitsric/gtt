@@ -138,6 +138,9 @@ fn build_client_report(
     let total_lines_added = days.iter().map(|d| d.total_lines_added).sum();
     let total_lines_deleted = days.iter().map(|d| d.total_lines_deleted).sum();
 
+    let total_lines = (total_lines_added + total_lines_deleted) as f64;
+    let llm_cost = (total_lines / 1000.0) * client_cfg.llm_cost_per_kloc;
+
     Ok(ClientReport {
         client_name: client_name.to_string(),
         period_start: since,
@@ -149,6 +152,8 @@ fn build_client_report(
         currency: client_cfg.currency.clone(),
         total_lines_added,
         total_lines_deleted,
+        llm_cost_per_kloc: client_cfg.llm_cost_per_kloc,
+        llm_cost,
     })
 }
 
