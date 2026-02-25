@@ -1,52 +1,52 @@
 # gtt — Git Time Tracker
 
-> Estima horas trabajadas y montos a facturar directamente desde tu historial de commits.
+> Estimate hours worked and billable amounts directly from your commit history.
 
-```
+```bash
 $ gtt report --client "Startup X" --last-month
 
-Cliente: Startup X
-Periodo: 01/01/2026 — 31/01/2026
+Client: Startup X
+Period: 01/01/2026 — 01/31/2026
 
 +-----------+----------+--------+---------+------------------------------+
-| Fecha     | Sesiones | Horas  | Commits | Repos                        |
+| Date      | Sessions | Hours  | Commits | Repos                        |
 +-----------+----------+--------+---------+------------------------------+
-| Lun 05/01 |        2 | 3h 15m |       5 | startupx-web                 |
-| Mar 06/01 |        1 | 1h 40m |       3 | startupx-api                 |
-| Mie 07/01 |        3 | 4h 50m |       8 | startupx-web, startupx-api   |
-| Vie 09/01 |        1 | 2h 10m |       4 | startupx-web                 |
+| Mon 01/05 |        2 | 3h 15m |       5 | startupx-web                 |
+| Tue 01/06 |        1 | 1h 40m |       3 | startupx-api                 |
+| Wed 01/07 |        3 | 4h 50m |       8 | startupx-web, startupx-api   |
+| Fri 01/09 |        1 | 2h 10m |       4 | startupx-web                 |
 | Total     |        7 | 11h 55m|      20 |                              |
 +-----------+----------+--------+---------+------------------------------+
 
-Monto: 11.92h × 80/h = 953.33 USD
+Amount: 11.92h × 80/h = 953.33 USD
 ```
 
 ---
 
-## El problema
+## The Problem
 
-Los freelancers que cobran por hora pierden dinero constantemente porque reconstruir el tiempo trabajado a mano es doloroso. Los timers manuales se olvidan. Las estimaciones a ojo subestiman.
+Freelancers who bill by the hour constantly lose money because manually reconstructing time worked is painful. Manual timers are easily forgotten. Eyeball estimates often fall short.
 
-**Lo que ya tienes:** cada commit tiene un timestamp exacto. `gtt` los analiza para detectar sesiones de trabajo y calcular las horas reales.
+**What you already have:** every commit has an exact timestamp. `gtt` analyzes them to detect work sessions and calculate real hours.
 
-**Por qué las alternativas no cierran el loop:**
+**Why alternatives fall short:**
 
-| Herramienta | Problema |
+| Tool | Problem |
 |---|---|
-| `git-hours` | Sin clientes ni tasas. Abandonado (roto en Node 18+). |
-| GTM | Requiere plugins de editor. Pierde datos con rebase/squash. |
-| WakaTime | $8/mes, envía código a servidores externos. |
-| Toggl / Clockify | Requieren timers manuales — el problema original. |
+| `git-hours` | No clients or rates. Abandoned (broken on Node 18+). |
+| GTM | Requires editor plugins. Loses data on rebase/squash. |
+| WakaTime | $8/month, sends code to external servers. |
+| Toggl / Clockify | Require manual timers — the original problem. |
 
-`gtt` es la única herramienta que va de **repos → sesiones → horas → monto a facturar** en un solo comando, sin servidores ni suscripciones.
+`gtt` is the only tool that goes from **repos → sessions → hours → billable amount** in a single command, with no servers or subscriptions.
 
 ---
 
-## Instalación
+## Installation
 
-### Desde binario (recomendado)
+### From binary (recommended)
 
-Descarga el binario para tu plataforma desde la [página de releases](https://github.com/tu-usuario/gtt/releases):
+Download the binary for your platform from the [releases page](https://github.com/tu-usuario/gtt/releases):
 
 ```bash
 # Linux / macOS
@@ -55,63 +55,63 @@ chmod +x gtt
 sudo mv gtt /usr/local/bin/
 ```
 
-### Con Cargo
+### With Cargo
 
 ```bash
 cargo install gtt
 ```
 
-### Desde fuente
+### From source
 
 ```bash
 git clone https://github.com/tu-usuario/gtt
 cd gtt
 cargo build --release
-# El binario queda en target/release/gtt
+# The binary is placed at target/release/gtt
 ```
 
 ---
 
-## Inicio rápido
+## Quick Start
 
-**1. Configurar clientes y repos:**
+**1. Configure clients and repos:**
 
 ```bash
 gtt init
 ```
 
-El wizard te pregunta por tus clientes, las rutas a sus repositorios y tu tasa horaria. Genera `~/.config/gtt/config.toml` automáticamente.
+The wizard asks for your clients, the paths to their repositories, and your hourly rate. It automatically generates `~/.config/gtt/config.toml`.
 
-**2. Ver horas de hoy y esta semana:**
+**2. View today's and this week's hours:**
 
 ```bash
 gtt status
 ```
 
-**3. Ver el reporte del mes pasado:**
+**3. View last month's report:**
 
 ```bash
 gtt report --client "Startup X" --last-month
 ```
 
-**4. Verificar sesiones antes de facturar:**
+**4. Verify sessions before billing:**
 
 ```bash
 gtt verify --client "Startup X" --last-month
 ```
 
-**5. Exportar a CSV para tu sistema de facturación:**
+**5. Export to CSV for your billing system:**
 
 ```bash
 gtt export --client "Startup X" --last-month --format csv
-# Genera: gtt-startup-x-2026-01.csv
+# Generates: gtt-startup-x-2026-01.csv
 ```
 
 ---
 
-## Configuración
+## Configuration
 
-El archivo de configuración vive en `~/.config/gtt/config.toml`:
+The configuration file lives at `~/.config/gtt/config.toml`:
 
 ```toml
 [client."Startup X"]
@@ -122,40 +122,40 @@ repos = [
 hourly_rate = 80
 currency = "USD"
 
-[client."Agencia Y"]
-repos = ["/home/user/agencia-landing"]
+[client."Agency Y"]
+repos = ["/home/user/agency-landing"]
 hourly_rate = 60
 currency = "EUR"
 
 [settings]
-session_gap_minutes = 120   # inactividad > 2h = nueva sesión
-first_commit_minutes = 30   # tiempo base por primer commit de sesión
-exclude_weekends = false     # no cruzar sesiones en fin de semana
+session_gap_minutes = 120   # inactivity > 2h = new session
+first_commit_minutes = 30   # base time for the first commit of a session
+exclude_weekends = false     # avoid crossing sessions over the weekend
 ```
 
-### Opciones de `[settings]`
+### `[settings]` Options
 
-| Opción | Default | Descripción |
+| Option | Default | Description |
 |---|---|---|
-| `session_gap_minutes` | `120` | Minutos de inactividad que inician una nueva sesión |
-| `first_commit_minutes` | `30` | Minutos base asignados al primer commit de cada sesión |
-| `exclude_weekends` | `false` | Evita cruzar sesiones entre viernes y lunes |
-| `bot_authors` | `["dependabot[bot]", ...]` | Autores excluidos del análisis |
+| `session_gap_minutes` | `120` | Minutes of inactivity that start a new session |
+| `first_commit_minutes` | `30` | Base minutes assigned to the first commit of each session |
+| `exclude_weekends` | `false` | Prevents crossing sessions between Friday and Monday |
+| `bot_authors` | `["dependabot[bot]", ...]` | Authors excluded from the analysis |
 
-Para editar el config directamente:
+To edit the config directly:
 
 ```bash
-gtt config show    # ver configuración actual
-gtt config edit    # abrir en $EDITOR
+gtt config show    # View current configuration
+gtt config edit    # Open in $EDITOR
 ```
 
 ---
 
-## Comandos
+## Commands
 
 ### `gtt init`
 
-Setup interactivo. Crea o sobreescribe `~/.config/gtt/config.toml`.
+Interactive setup. Creates or overwrites `~/.config/gtt/config.toml`.
 
 ```bash
 gtt init
@@ -165,149 +165,149 @@ gtt init
 
 ### `gtt status`
 
-Resumen rápido de horas de hoy y esta semana por cliente.
+Quick summary of hours for today and this week per client.
 
 ```bash
 gtt status
 
 # gtt status
-#   Hoy: 25/02/2026    Esta semana: 23/02/2026 — 25/02/2026
+#   Today: 02/25/2026    This week: 02/23/2026 — 02/25/2026
 #
-#   Startup X — Hoy: 2h 30m  (4 commits)   Esta semana: 8h 15m  (14 commits)
-#   Agencia Y — Hoy: 0m  (0 commits)        Esta semana: 3h 40m  (7 commits)
+#   Startup X — Today: 2h 30m  (4 commits)   This week: 8h 15m  (14 commits)
+#   Agency Y  — Today: 0m      (0 commits)   This week: 3h 40m  (7 commits)
 ```
 
 ---
 
 ### `gtt report`
 
-Reporte de horas por cliente. Soporta múltiples formatos y rangos de fecha.
+Hours report per client. Supports multiple formats and date ranges.
 
 ```bash
-# Mes pasado (más común para facturar)
+# Last month (most common for billing)
 gtt report --client "Startup X" --last-month
 
-# Semana pasada
+# Last week
 gtt report --client "Startup X" --last-week
 
-# Rango personalizado
+# Custom range
 gtt report --client "Startup X" --since 2026-01-01 --until 2026-01-31
 
-# Todos los clientes
+# All clients
 gtt report --last-month
 
-# Formato CSV (imprime a stdout)
+# CSV Format (prints to stdout)
 gtt report --client "Startup X" --last-month --format csv
 
-# Formato JSON
+# JSON Format
 gtt report --client "Startup X" --last-month --format json
 
-# Guardar en archivo específico
-gtt report --client "Startup X" --last-month --format csv --output enero-2026.csv
+# Save to a specific file
+gtt report --client "Startup X" --last-month --format csv --output january-2026.csv
 ```
 
-**Flags disponibles:**
+**Available Flags:**
 
-| Flag | Descripción |
+| Flag | Description |
 |---|---|
-| `--client <nombre>` | Filtrar por cliente. Sin flag, reporta todos. |
-| `--last-week` | Semana pasada (lunes a domingo) |
-| `--last-month` | Mes calendario anterior |
-| `--since <YYYY-MM-DD>` | Inicio del rango |
-| `--until <YYYY-MM-DD>` | Fin del rango |
+| `--client <name>` | Filter by client. Without flag, reports all. |
+| `--last-week` | Last week (Monday to Sunday) |
+| `--last-month` | Previous calendar month |
+| `--since <YYYY-MM-DD>` | Range start |
+| `--until <YYYY-MM-DD>` | Range end |
 | `--format <fmt>` | `table` (default), `csv`, `json` |
-| `--output <archivo>` | Guardar en archivo en vez de stdout |
+| `--output <file>` | Save to file instead of stdout |
 
 ---
 
 ### `gtt verify`
 
-Lista las sesiones detectadas con timestamps y commits incluidos. Úsalo para validar que el análisis coincide con tu percepción antes de facturar.
+Lists detected sessions with timestamps and included commits. Use it to validate that the analysis matches your perception before billing.
 
 ```bash
 gtt verify --client "Startup X" --last-month
 
-# Verificar sesiones: Startup X
-# Periodo: 01/01/2026 — 31/01/2026
+# Verify sessions: Startup X
+# Period: 01/01/2026 — 01/31/2026
 #
-# ── Monday 05/01/2026 (2 sesiones, 3h 15m) ──
-#   Sesión 1:  09:15 → 10:45  (1h 30m, 3 commits)
+# ── Monday 01/05/2026 (2 sessions, 3h 15m) ──
+#   Session 1:  09:15 → 10:45  (1h 30m, 3 commits)
 #     09:15 a3f2e1b feat: add user authentication
 #     09:52 b1c4d5e fix: handle invalid tokens
 #     10:45 c2d3e4f test: authentication edge cases
 #
-#   Sesión 2:  15:30 → 17:00  (1h 45m, 2 commits)
+#   Session 2:  15:30 → 17:00  (1h 45m, 2 commits)
 #     15:30 d4e5f6a refactor: extract auth service
 #     17:00 e5f6a7b docs: update API documentation
 ```
 
-**Flags:** mismos que `gtt report` (excepto `--format` y `--output`).
+**Flags:** Same as `gtt report` (except `--format` and `--output`).
 
 ---
 
 ### `gtt export`
 
-Alias de `report` con generación automática de nombre de archivo.
+Alias for `report` with automatic file name generation.
 
 ```bash
-# Genera gtt-startup-x-2026-01.csv en el directorio actual
+# Generates gtt-startup-x-2026-01.csv in the current directory
 gtt export --client "Startup X" --last-month --format csv
 
 # JSON
 gtt export --client "Startup X" --last-month --format json
 
-# Nombre personalizado
-gtt export --client "Startup X" --last-month --format csv --output factura-enero.csv
+# Custom name
+gtt export --client "Startup X" --last-month --format csv --output january-invoice.csv
 ```
 
-El nombre generado sigue el patrón `gtt-<cliente>-<YYYY-MM>.<formato>`.
+The generated name follows the pattern `gtt-<client>-<YYYY-MM>.<format>`.
 
 ---
 
 ### `gtt config`
 
 ```bash
-gtt config show   # imprime el config actual
-gtt config edit   # abre en $EDITOR (o nano si no está definido)
+gtt config show   # Prints the current config
+gtt config edit   # Opens in $EDITOR (or nano if undefined)
 ```
 
 ---
 
-## Cómo funciona el algoritmo de sesiones
+## How the sessions algorithm works
 
-`gtt` analiza el historial de commits para inferir cuándo trabajaste:
+`gtt` analyzes your commit history to infer when you worked:
 
-1. **Ordena** todos los commits por `author date` (no commit date — robusto ante `git rebase` y `git commit --amend`).
+1. **Sorts** all commits by `author date` (not commit date — making it robust against `git rebase` and `git commit --amend`).
 
-2. **Detecta sesiones** comparando pares consecutivos de commits:
-   - Si el gap es **> `session_gap_minutes`** (default: 2 horas) → nueva sesión
-   - Si el par **cruza medianoche** → nueva sesión (aunque el gap sea menor)
-   - En caso contrario → mismo bloque de trabajo, el gap cuenta como tiempo trabajado
+2. **Detects sessions** by comparing consecutive pairs of commits:
+   - If the gap is **> `session_gap_minutes`** (default: 2 hours) → new session
+   - If the pair **crosses midnight** → new session (even if the gap is smaller)
+   - Otherwise → same work block, the gap counts as time worked
 
-3. **Agrega tiempo base** al primer commit de cada sesión (`first_commit_minutes`, default: 30 min), para compensar el tiempo previo al primer commit.
+3. **Adds base time** to the first commit of each session (`first_commit_minutes`, default: 30 min), to account for the time spent before the first commit.
 
-4. **Excluye bots**: commits de Dependabot, GitHub Actions y similares se ignoran por defecto.
+4. **Excludes bots**: Commits from Dependabot, GitHub Actions, and similar are ignored by default.
 
 ```
 Commits:  09:00  09:45  10:30        15:00  15:20
           |------|------|             |------|
           45min  45min               20min
-          ←   sesión 1   →           ← sesión 2 →
+          ←  session 1  →            ← session 2 →
 
-Sesión 1: 30min base + 45 + 45 = 2h 0m
-Sesión 2: 30min base + 20 = 50m
-Total:    2h 50m
+Session 1: 30min base + 45 + 45 = 2h 0m
+Session 2: 30min base + 20 = 50m
+Total:     2h 50m
 ```
 
-> **Nota:** `gtt` produce **estimaciones**, no registros exactos. Usa `gtt verify` para revisar las sesiones detectadas antes de facturar. El README de cada reporte sugiere revisarlo con el cliente si hay disputas.
+> **Note:** `gtt` produces **estimates**, not exact records. Use `gtt verify` to review the detected sessions before billing. The README for each report suggests reviewing it with the client if there are disputes.
 
 ---
 
-## Formatos de exportación
+## Export Formats
 
 ### CSV
 
-Compatible con FreshBooks, Wave, Invoice Ninja y cualquier hoja de cálculo.
+Compatible with FreshBooks, Wave, Invoice Ninja, and any spreadsheet.
 
 ```csv
 date,sessions,hours,minutes,commits,repos,amount,currency
@@ -344,13 +344,13 @@ date,sessions,hours,minutes,commits,repos,amount,currency
 
 ---
 
-## Casos de uso avanzados
+## Advanced Use Cases
 
-### Repos compartidos con otros devs
+### Repos shared with other devs
 
-`gtt` filtra automáticamente por el email configurado en `git config user.email` de cada repositorio. Solo tus commits cuentan.
+`gtt` automatically filters by the email configured in `git config user.email` for each repository. Only your commits count.
 
-### Múltiples repos por cliente
+### Multiple repos per client
 
 ```toml
 [client."Startup X"]
@@ -363,56 +363,56 @@ hourly_rate = 80
 currency = "USD"
 ```
 
-Los commits de todos los repos se combinan y las sesiones se detectan entre ellos. Un commit a `api` y un commit a `web` con 40 minutos de diferencia son parte de la misma sesión.
+Commits from all repos are combined, and sessions are detected across them. A commit to `api` and a commit to `web` 40 minutes apart are part of the same session.
 
-### Workflows de facturación
+### Billing Workflows
 
 ```bash
-# 1. Revisar sesiones detectadas
+# 1. Review detected sessions
 gtt verify --client "Startup X" --last-month
 
-# 2. Si todo se ve bien, generar reporte
+# 2. If everything looks good, generate the report
 gtt report --client "Startup X" --last-month
 
-# 3. Exportar para importar a tu sistema de facturación
+# 3. Export to import into your billing system
 gtt export --client "Startup X" --last-month --format csv
 ```
 
 ---
 
-## Preguntas frecuentes
+## FAQ
 
-**¿Qué pasa si hice `git rebase` o `git commit --amend`?**
-`gtt` siempre usa el `author date` (la fecha original del commit), no el `commit date` (que cambia con rebase/amend). Tus horas son robustas ante cualquier reescritura del historial.
+**What happens if I used `git rebase` or `git commit --amend`?**
+`gtt` always uses the `author date` (the original date of the commit), not the `commit date` (which changes with rebase/amend). Your hours are robust against any history rewriting.
 
-**¿Por qué no aparecen mis commits?**
-`gtt` filtra por el email del autor configurado en `git config user.email`. Verifica que el email en tu repo coincide con el autor de los commits: `git log --format="%ae" | head -5`.
+**Why are my commits not showing up?**
+`gtt` filters by the author email configured in `git config user.email`. Verify that the email in your repo matches the author of the commits: `git log --format="%ae" | head -5`.
 
-**¿Mis commits de bots inflan el tiempo?**
-No. Los commits de Dependabot, GitHub Actions y cualquier autor que termine en `[bot]` se excluyen automáticamente. Puedes agregar más exclusiones en `bot_authors` del config.
+**Do bot commits inflate the time?**
+No. Commits from Dependabot, GitHub Actions, and any author ending in `[bot]` are automatically excluded. You can add more exclusions in `bot_authors` in the config.
 
-**¿Es exacto?**
-Es una estimación. El algoritmo no puede saber cuánto tiempo pasaste pensando antes del primer commit o revisando código sin commitear. Por eso el parámetro `first_commit_minutes` existe — y por eso `gtt verify` te permite revisar las sesiones antes de facturar.
+**Is it accurate?**
+It's an estimate. The algorithm cannot know how much time you spent thinking before the first commit or reviewing code without committing. That's why the `first_commit_minutes` parameter exists — and why `gtt verify` allows you to review the sessions before billing.
 
-**¿Mis datos salen de mi máquina?**
-Nunca. `gtt` es un binario que corre completamente local. No tiene servidores, no tiene telemetría, no hay red.
+**Does my data leave my machine?**
+Never. `gtt` is a binary that runs completely locally. It has no servers, no telemetry, no network required.
 
 ---
 
-## Contribuir
+## Contributing
 
 ```bash
 git clone https://github.com/tu-usuario/gtt
 cd gtt
-cargo test        # correr todos los tests
-cargo check       # verificar sin compilar
-cargo build       # build de desarrollo
+cargo test        # run all tests
+cargo check       # verify without compiling
+cargo build       # dev build
 ```
 
-Los tests del algoritmo de sesiones están en `tests/session_algorithm_test.rs`. Si modificas `src/session/analyzer.rs`, agrega tests para los casos edge que estás cubriendo.
+The session algorithm tests are in `tests/session_algorithm_test.rs`. If you modify `src/session/analyzer.rs`, add tests for the edge cases you are covering.
 
 ---
 
-## Licencia
+## License
 
-MIT — úsalo, modifícalo, distribúyelo.
+MIT — use it, modify it, distribute it.
