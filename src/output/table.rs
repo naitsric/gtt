@@ -121,6 +121,7 @@ pub fn print_client_report(report: &ClientReport) {
             format!("Total: {} (sin tasa horaria configurada)", format_duration(report.total_minutes)).yellow()
         );
     }
+    super::chart::print_charts(report);
     println!();
 }
 

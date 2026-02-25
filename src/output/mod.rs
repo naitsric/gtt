@@ -1,3 +1,4 @@
+pub mod chart;
 pub mod csv;
 pub mod json_fmt;
 pub mod table;

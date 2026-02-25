@@ -25,3 +25,8 @@ install:
 	echo "Installing to /usr/local/bin/ (requires sudo)..."; \
 	sudo mv gtt /usr/local/bin/; \
 	echo "Done! gtt $$VERSION installed successfully."
+
+.PHONY: run
+run:
+	@echo "Running gtt locally..."
+	cargo run -- $(ARGS)
