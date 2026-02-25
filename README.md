@@ -46,11 +46,11 @@ Freelancers who bill by the hour constantly lose money because manually reconstr
 
 ### From binary (recommended)
 
-Download the binary for your platform from the [releases page](https://github.com/tu-usuario/gtt/releases):
+Download the binary for your platform from the [releases page](https://github.com/naitsric/gtt/releases):
 
 ```bash
 # Linux / macOS
-curl -L https://github.com/tu-usuario/gtt/releases/latest/download/gtt-linux-x86_64 -o gtt
+curl -L https://github.com/naitsric/gtt/releases/latest/download/gtt-linux-x86_64 -o gtt
 chmod +x gtt
 sudo mv gtt /usr/local/bin/
 ```
@@ -64,7 +64,7 @@ cargo install gtt
 ### From source
 
 ```bash
-git clone https://github.com/tu-usuario/gtt
+git clone https://github.com/naitsric/gtt
 cd gtt
 cargo build --release
 # The binary is placed at target/release/gtt
@@ -402,7 +402,7 @@ Never. `gtt` is a binary that runs completely locally. It has no servers, no tel
 ## Contributing
 
 ```bash
-git clone https://github.com/tu-usuario/gtt
+git clone https://github.com/naitsric/gtt
 cd gtt
 cargo test        # run all tests
 cargo check       # verify without compiling
