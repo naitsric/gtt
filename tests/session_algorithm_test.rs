@@ -13,6 +13,22 @@ fn make_commit(hash: &str, date_str: &str, repo: &str) -> Commit {
         subject: format!("commit {}", hash),
         repo_path: PathBuf::from(format!("/repos/{}", repo)),
         repo_name: repo.to_string(),
+        lines_added: 0,
+        lines_deleted: 0,
+    }
+}
+
+fn make_commit_with_volume(hash: &str, date_str: &str, repo: &str, added: u32, deleted: u32) -> Commit {
+    Commit {
+        hash: hash.to_string(),
+        author_date: DateTime::parse_from_rfc3339(date_str).unwrap(),
+        author_email: "dev@example.com".to_string(),
+        author_name: "Dev".to_string(),
+        subject: format!("commit {}", hash),
+        repo_path: PathBuf::from(format!("/repos/{}", repo)),
+        repo_name: repo.to_string(),
+        lines_added: added,
+        lines_deleted: deleted,
     }
 }
 
@@ -22,6 +38,16 @@ fn default_settings() -> Settings {
         first_commit_minutes: 30,
         exclude_weekends: false,
         bot_authors: vec![],
+        volume_adjustment: false,
+        volume_factor: 5.0,
+        volume_scale: 50.0,
+    }
+}
+
+fn volume_settings() -> Settings {
+    Settings {
+        volume_adjustment: true,
+        ..default_settings()
     }
 }
 
@@ -170,4 +196,63 @@ fn test_exact_gap_boundary_stays_same_session() {
     let sessions = analyze(commits, &default_settings());
     assert_eq!(sessions.len(), 1);
     assert_eq!(sessions[0].duration_minutes, 30 + 120);
+}
+
+// --- Volume adjustment tests ---
+
+#[test]
+fn test_volume_disabled_no_bonus() {
+    let commits = vec![make_commit_with_volume("a1", "2026-01-05T10:00:00+00:00", "proj", 200, 50)];
+    let sessions = analyze(commits, &default_settings());
+    assert_eq!(sessions[0].duration_minutes, 30); // no bonus when disabled
+}
+
+#[test]
+fn test_volume_enabled_adds_bonus() {
+    let commits = vec![make_commit_with_volume("a1", "2026-01-05T10:00:00+00:00", "proj", 200, 50)];
+    let sessions = analyze(commits, &volume_settings());
+    // 250 lines, bonus = 5 * ln(1 + 250/50) = 5 * ln(6) ≈ 8.96 → round to 9
+    assert_eq!(sessions[0].duration_minutes, 30 + 9);
+}
+
+#[test]
+fn test_volume_zero_lines_no_bonus() {
+    let commits = vec![make_commit_with_volume("a1", "2026-01-05T10:00:00+00:00", "proj", 0, 0)];
+    let sessions = analyze(commits, &volume_settings());
+    assert_eq!(sessions[0].duration_minutes, 30);
+}
+
+#[test]
+fn test_volume_lines_aggregated_in_session() {
+    let commits = vec![
+        make_commit_with_volume("a1", "2026-01-05T10:00:00+00:00", "proj", 10, 5),
+        make_commit_with_volume("a2", "2026-01-05T10:30:00+00:00", "proj", 20, 10),
+    ];
+    let sessions = analyze(commits, &default_settings());
+    assert_eq!(sessions[0].lines_added, 30);
+    assert_eq!(sessions[0].lines_deleted, 15);
+}
+
+#[test]
+fn test_volume_per_commit_bonus() {
+    // Two commits with volume — bonus computed per commit, not on total
+    let commits = vec![
+        make_commit_with_volume("a1", "2026-01-05T10:00:00+00:00", "proj", 50, 0),
+        make_commit_with_volume("a2", "2026-01-05T10:30:00+00:00", "proj", 50, 0),
+    ];
+    let sessions = analyze(commits, &volume_settings());
+    // Per commit: 5 * ln(1 + 50/50) = 5 * ln(2) ≈ 3.47, two commits = 6.93 → round to 7
+    // Base: 30 + 30 gap + 7 volume = 67
+    assert_eq!(sessions[0].duration_minutes, 30 + 30 + 7);
+}
+
+#[test]
+fn test_volume_lines_aggregated_in_day_report() {
+    let commits = vec![
+        make_commit_with_volume("a1", "2026-01-05T10:00:00+00:00", "proj", 100, 20),
+        make_commit_with_volume("a2", "2026-01-05T15:00:00+00:00", "proj", 50, 10),
+    ];
+    let days = group_by_day(analyze(commits, &default_settings()));
+    assert_eq!(days[0].total_lines_added, 150);
+    assert_eq!(days[0].total_lines_deleted, 30);
 }

@@ -4,7 +4,7 @@ use colored::Colorize;
 use std::path::Path;
 use crate::config::{load_config, ClientConfig};
 use crate::errors::GttError;
-use crate::git::{get_repo_user_email, parse_git_log, run_git_log};
+use crate::git::{get_repo_user_email, merge_numstat, parse_git_log, parse_numstat, run_git_log, run_git_log_numstat};
 use crate::output::{print_client_report, print_verify_report};
 use crate::output::csv::serialize_csv;
 use crate::output::json_fmt::serialize_json;
@@ -116,6 +116,13 @@ fn build_client_report(
         };
 
         let mut commits = parse_git_log(&raw, path, bot_authors)?;
+
+        // Fetch and merge numstat (lines added/deleted per commit)
+        if let Ok(numstat_raw) = run_git_log_numstat(path, Some(since), Some(until), author_email.as_deref()) {
+            let numstat_map = parse_numstat(&numstat_raw);
+            merge_numstat(&mut commits, &numstat_map);
+        }
+
         all_commits.append(&mut commits);
     }
 
@@ -128,6 +135,8 @@ fn build_client_report(
 
     let total_minutes = days.iter().map(|d| d.total_minutes).sum();
     let total_commits = days.iter().map(|d| d.total_commits).sum();
+    let total_lines_added = days.iter().map(|d| d.total_lines_added).sum();
+    let total_lines_deleted = days.iter().map(|d| d.total_lines_deleted).sum();
 
     Ok(ClientReport {
         client_name: client_name.to_string(),
@@ -138,6 +147,8 @@ fn build_client_report(
         total_commits,
         hourly_rate: client_cfg.hourly_rate,
         currency: client_cfg.currency.clone(),
+        total_lines_added,
+        total_lines_deleted,
     })
 }
 

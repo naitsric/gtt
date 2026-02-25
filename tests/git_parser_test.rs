@@ -1,5 +1,5 @@
 use std::path::PathBuf;
-use gtt::git::parse_git_log;
+use gtt::git::{parse_git_log, parse_numstat, merge_numstat};
 
 fn repo() -> PathBuf {
     PathBuf::from("/home/user/project")
@@ -79,4 +79,75 @@ fn test_author_date_timezone_preserved() {
     let raw = "abc1\x002026-01-05T10:00:00-05:00\x00dev@ex.com\x00Dev\x00Commit\x00END\n";
     let commits = parse_git_log(raw, &repo(), &[]).unwrap();
     assert_eq!(commits[0].author_date.offset().local_minus_utc(), -5 * 3600);
+}
+
+#[test]
+fn test_parsed_commits_have_zero_volume_by_default() {
+    let raw = "abc123\x002026-01-05T10:30:00+00:00\x00dev@example.com\x00Dev\x00Fix bug\x00END\n";
+    let commits = parse_git_log(raw, &repo(), &[]).unwrap();
+    assert_eq!(commits[0].lines_added, 0);
+    assert_eq!(commits[0].lines_deleted, 0);
+}
+
+// --- parse_numstat tests ---
+
+#[test]
+fn test_parse_numstat_basic() {
+    let raw = "abc123\n\n10\t5\tsrc/main.rs\n3\t1\tsrc/lib.rs\n";
+    let map = parse_numstat(raw);
+    assert_eq!(map.get("abc123"), Some(&(13, 6)));
+}
+
+#[test]
+fn test_parse_numstat_binary_files_skipped() {
+    let raw = "abc123\n\n-\t-\timage.png\n5\t2\tsrc/main.rs\n";
+    let map = parse_numstat(raw);
+    assert_eq!(map.get("abc123"), Some(&(5, 2)));
+}
+
+#[test]
+fn test_parse_numstat_multiple_commits() {
+    let raw = "abc1\n\n10\t5\tfile.rs\n\nabc2\n\n3\t1\tfile2.rs\n";
+    let map = parse_numstat(raw);
+    assert_eq!(map.get("abc1"), Some(&(10, 5)));
+    assert_eq!(map.get("abc2"), Some(&(3, 1)));
+}
+
+#[test]
+fn test_parse_numstat_empty() {
+    let map = parse_numstat("");
+    assert!(map.is_empty());
+}
+
+#[test]
+fn test_parse_numstat_commit_with_no_files() {
+    let raw = "abc123\n\n";
+    let map = parse_numstat(raw);
+    assert_eq!(map.get("abc123"), Some(&(0, 0)));
+}
+
+// --- merge_numstat tests ---
+
+#[test]
+fn test_merge_numstat_matches_by_hash() {
+    let raw_log = "abc123\x002026-01-05T10:30:00+00:00\x00dev@ex.com\x00Dev\x00Fix\x00END\n";
+    let mut commits = parse_git_log(raw_log, &repo(), &[]).unwrap();
+
+    let mut numstat = std::collections::HashMap::new();
+    numstat.insert("abc123".to_string(), (42u32, 10u32));
+
+    merge_numstat(&mut commits, &numstat);
+    assert_eq!(commits[0].lines_added, 42);
+    assert_eq!(commits[0].lines_deleted, 10);
+}
+
+#[test]
+fn test_merge_numstat_no_match_keeps_zero() {
+    let raw_log = "abc123\x002026-01-05T10:30:00+00:00\x00dev@ex.com\x00Dev\x00Fix\x00END\n";
+    let mut commits = parse_git_log(raw_log, &repo(), &[]).unwrap();
+
+    let numstat = std::collections::HashMap::new(); // empty
+    merge_numstat(&mut commits, &numstat);
+    assert_eq!(commits[0].lines_added, 0);
+    assert_eq!(commits[0].lines_deleted, 0);
 }

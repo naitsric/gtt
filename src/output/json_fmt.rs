@@ -13,6 +13,8 @@ struct JsonReport<'a> {
     hourly_rate: f64,
     currency: &'a str,
     billable_amount: f64,
+    total_lines_added: u32,
+    total_lines_deleted: u32,
     days: Vec<JsonDay<'a>>,
 }
 
@@ -25,6 +27,8 @@ struct JsonDay<'a> {
     total_commits: usize,
     repos: &'a [String],
     amount: f64,
+    lines_added: u32,
+    lines_deleted: u32,
 }
 
 pub fn serialize_json(report: &ClientReport) -> Result<String> {
@@ -46,6 +50,8 @@ pub fn serialize_json(report: &ClientReport) -> Result<String> {
                 total_commits: day.total_commits,
                 repos: &day.repos,
                 amount: (amount * 100.0).round() / 100.0,
+                lines_added: day.total_lines_added,
+                lines_deleted: day.total_lines_deleted,
             }
         })
         .collect();
@@ -60,6 +66,8 @@ pub fn serialize_json(report: &ClientReport) -> Result<String> {
         hourly_rate: report.hourly_rate,
         currency: &report.currency,
         billable_amount: (report.billable_amount() * 100.0).round() / 100.0,
+        total_lines_added: report.total_lines_added,
+        total_lines_deleted: report.total_lines_deleted,
         days,
     };
 

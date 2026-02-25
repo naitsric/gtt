@@ -57,6 +57,46 @@ pub fn run_git_log(
     Ok(String::from_utf8_lossy(&output.stdout).to_string())
 }
 
+/// Run git log with only hash and numstat output.
+pub fn run_git_log_numstat(
+    repo_path: &Path,
+    since: Option<NaiveDate>,
+    until: Option<NaiveDate>,
+    author_email: Option<&str>,
+) -> Result<String> {
+    let mut args = vec![
+        "-C".to_string(),
+        repo_path.to_string_lossy().to_string(),
+        "log".to_string(),
+        "--format=%H".to_string(),
+        "--numstat".to_string(),
+        "--no-merges".to_string(),
+    ];
+
+    if let Some(since_date) = since {
+        args.push(format!("--after={}", since_date.format("%Y-%m-%d")));
+    }
+    if let Some(until_date) = until {
+        let next_day = until_date.succ_opt().unwrap_or(until_date);
+        args.push(format!("--before={}", next_day.format("%Y-%m-%d")));
+    }
+    if let Some(email) = author_email {
+        args.push(format!("--author={}", email));
+    }
+
+    let output = Command::new("git")
+        .args(&args)
+        .output()
+        .map_err(|e| GttError::GitCommandFailed(e.to_string()))?;
+
+    if !output.status.success() {
+        let stderr = String::from_utf8_lossy(&output.stderr);
+        return Err(GttError::GitCommandFailed(stderr.to_string()).into());
+    }
+
+    Ok(String::from_utf8_lossy(&output.stdout).to_string())
+}
+
 /// Get the git user email for the repo (falls back to global config)
 pub fn get_repo_user_email(repo_path: &Path) -> Option<String> {
     let output = Command::new("git")

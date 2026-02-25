@@ -41,6 +41,15 @@ pub struct Settings {
     /// Author emails/names to exclude (bots, CI systems)
     #[serde(default = "default_bot_authors")]
     pub bot_authors: Vec<String>,
+    /// Enable volume-based time adjustment
+    #[serde(default)]
+    pub volume_adjustment: bool,
+    /// Base minutes for volume bonus per commit (logarithmic scale)
+    #[serde(default = "default_volume_factor")]
+    pub volume_factor: f64,
+    /// Lines-changed normalization divisor
+    #[serde(default = "default_volume_scale")]
+    pub volume_scale: f64,
 }
 
 fn default_session_gap_minutes() -> u32 {
@@ -59,6 +68,14 @@ fn default_bot_authors() -> Vec<String> {
     ]
 }
 
+fn default_volume_factor() -> f64 {
+    5.0
+}
+
+fn default_volume_scale() -> f64 {
+    50.0
+}
+
 impl Default for Settings {
     fn default() -> Self {
         Self {
@@ -66,6 +83,9 @@ impl Default for Settings {
             first_commit_minutes: default_first_commit_minutes(),
             exclude_weekends: false,
             bot_authors: default_bot_authors(),
+            volume_adjustment: false,
+            volume_factor: default_volume_factor(),
+            volume_scale: default_volume_scale(),
         }
     }
 }

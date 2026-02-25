@@ -8,15 +8,15 @@ $ gtt report --client "Startup X" --last-month
 Client: Startup X
 Period: 01/01/2026 — 01/31/2026
 
-+-----------+----------+--------+---------+------------------------------+
-| Date      | Sessions | Hours  | Commits | Repos                        |
-+-----------+----------+--------+---------+------------------------------+
-| Mon 01/05 |        2 | 3h 15m |       5 | startupx-web                 |
-| Tue 01/06 |        1 | 1h 40m |       3 | startupx-api                 |
-| Wed 01/07 |        3 | 4h 50m |       8 | startupx-web, startupx-api   |
-| Fri 01/09 |        1 | 2h 10m |       4 | startupx-web                 |
-| Total     |        7 | 11h 55m|      20 |                              |
-+-----------+----------+--------+---------+------------------------------+
++-----------+----------+--------+---------+------------+----------------------------+
+| Date      | Sessions | Hours  | Commits | +/-        | Repos                      |
++-----------+----------+--------+---------+------------+----------------------------+
+| Mon 01/05 |        2 | 3h 15m |       5 | +320 -45   | startupx-web               |
+| Tue 01/06 |        1 | 1h 40m |       3 | +85 -12    | startupx-api               |
+| Wed 01/07 |        3 | 4h 50m |       8 | +410 -130  | startupx-web, startupx-api |
+| Fri 01/09 |        1 | 2h 10m |       4 | +150 -30   | startupx-web               |
+| Total     |        7 | 11h 55m|      20 | +965 -217  |                            |
++-----------+----------+--------+---------+------------+----------------------------+
 
 Amount: 11.92h × 80/h = 953.33 USD
 ```
@@ -49,9 +49,12 @@ Freelancers who bill by the hour constantly lose money because manually reconstr
 Download the binary for your platform from the [releases page](https://github.com/naitsric/gtt/releases):
 
 ```bash
-# Linux / macOS
-curl -L https://github.com/naitsric/gtt/releases/latest/download/gtt-linux-x86_64 -o gtt
-chmod +x gtt
+# Linux (Intel/AMD)
+curl -L https://github.com/naitsric/gtt/releases/download/v0.1.0/gtt-v0.1.0-x86_64-unknown-linux-gnu.tar.gz | tar xz
+sudo mv gtt /usr/local/bin/
+
+# macOS (Apple Silicon)
+curl -L https://github.com/naitsric/gtt/releases/download/v0.1.0/gtt-v0.1.0-aarch64-apple-darwin.tar.gz | tar xz
 sudo mv gtt /usr/local/bin/
 ```
 
@@ -131,6 +134,9 @@ currency = "EUR"
 session_gap_minutes = 120   # inactivity > 2h = new session
 first_commit_minutes = 30   # base time for the first commit of a session
 exclude_weekends = false     # avoid crossing sessions over the weekend
+volume_adjustment = true     # adjust time estimates based on code volume
+volume_factor = 5.0          # bonus scaling (minutes per ln-unit of volume)
+volume_scale = 50.0          # normalization: lines changed divisor
 ```
 
 ### `[settings]` Options
@@ -141,6 +147,9 @@ exclude_weekends = false     # avoid crossing sessions over the weekend
 | `first_commit_minutes` | `30` | Base minutes assigned to the first commit of each session |
 | `exclude_weekends` | `false` | Prevents crossing sessions between Friday and Monday |
 | `bot_authors` | `["dependabot[bot]", ...]` | Authors excluded from the analysis |
+| `volume_adjustment` | `false` | Enable time bonus based on code volume (lines changed) |
+| `volume_factor` | `5.0` | Bonus scaling factor (minutes per ln-unit) |
+| `volume_scale` | `50.0` | Normalization divisor for lines changed |
 
 To edit the config directly:
 
@@ -231,14 +240,14 @@ gtt verify --client "Startup X" --last-month
 # Period: 01/01/2026 — 01/31/2026
 #
 # ── Monday 01/05/2026 (2 sessions, 3h 15m) ──
-#   Session 1:  09:15 → 10:45  (1h 30m, 3 commits)
-#     09:15 a3f2e1b feat: add user authentication
-#     09:52 b1c4d5e fix: handle invalid tokens
-#     10:45 c2d3e4f test: authentication edge cases
+#   Session 1:  09:15 → 10:45  (1h 30m, 3 commits, +180 -25)
+#     09:15 a3f2e1b feat: add user authentication (+120 -5)
+#     09:52 b1c4d5e fix: handle invalid tokens (+30 -15)
+#     10:45 c2d3e4f test: authentication edge cases (+30 -5)
 #
-#   Session 2:  15:30 → 17:00  (1h 45m, 2 commits)
-#     15:30 d4e5f6a refactor: extract auth service
-#     17:00 e5f6a7b docs: update API documentation
+#   Session 2:  15:30 → 17:00  (1h 45m, 2 commits, +140 -20)
+#     15:30 d4e5f6a refactor: extract auth service (+90 -18)
+#     17:00 e5f6a7b docs: update API documentation (+50 -2)
 ```
 
 **Flags:** Same as `gtt report` (except `--format` and `--output`).
@@ -286,7 +295,22 @@ gtt config edit   # Opens in $EDITOR (or nano if undefined)
 
 3. **Adds base time** to the first commit of each session (`first_commit_minutes`, default: 30 min), to account for the time spent before the first commit.
 
-4. **Excludes bots**: Commits from Dependabot, GitHub Actions, and similar are ignored by default.
+4. **Volume bonus** (opt-in): When `volume_adjustment = true`, each commit gets a logarithmic time bonus based on lines changed:
+
+   ```
+   bonus = volume_factor × ln(1 + lines_changed / volume_scale)
+   ```
+
+   | Lines changed | Bonus (defaults) |
+   |---|---|
+   | 10 | +0.9 min |
+   | 50 | +3.5 min |
+   | 200 | +8.0 min |
+   | 500 | +12.0 min |
+
+   The logarithmic curve prevents inflation from auto-generated code while rewarding substantial hand-written work.
+
+5. **Excludes bots**: Commits from Dependabot, GitHub Actions, and similar are ignored by default.
 
 ```
 Commits:  09:00  09:45  10:30        15:00  15:20
@@ -310,9 +334,9 @@ Total:     2h 50m
 Compatible with FreshBooks, Wave, Invoice Ninja, and any spreadsheet.
 
 ```csv
-date,sessions,hours,minutes,commits,repos,amount,currency
-2026-01-05,2,3.2500,195,5,startupx-web,260.00,USD
-2026-01-06,1,1.6667,100,3,startupx-api,133.33,USD
+date,sessions,hours,minutes,commits,repos,amount,currency,lines_added,lines_deleted
+2026-01-05,2,3.2500,195,5,startupx-web,260.00,USD,320,45
+2026-01-06,1,1.6667,100,3,startupx-api,133.33,USD,85,12
 ```
 
 ### JSON
@@ -328,6 +352,8 @@ date,sessions,hours,minutes,commits,repos,amount,currency
   "hourly_rate": 80.0,
   "currency": "USD",
   "billable_amount": 953.33,
+  "total_lines_added": 965,
+  "total_lines_deleted": 217,
   "days": [
     {
       "date": "2026-01-05",
@@ -336,7 +362,9 @@ date,sessions,hours,minutes,commits,repos,amount,currency
       "total_hours": 3.25,
       "total_commits": 5,
       "repos": ["startupx-web"],
-      "amount": 260.0
+      "amount": 260.0,
+      "lines_added": 320,
+      "lines_deleted": 45
     }
   ]
 }

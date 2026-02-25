@@ -8,6 +8,8 @@ pub struct Session {
     pub duration_minutes: u32,
     pub commits: Vec<Commit>,
     pub repos: Vec<String>,
+    pub lines_added: u32,
+    pub lines_deleted: u32,
 }
 
 impl Session {
@@ -28,6 +30,8 @@ pub struct DayReport {
     pub total_minutes: u32,
     pub total_commits: usize,
     pub repos: Vec<String>,
+    pub total_lines_added: u32,
+    pub total_lines_deleted: u32,
 }
 
 impl DayReport {
@@ -46,6 +50,8 @@ pub struct ClientReport {
     pub total_commits: usize,
     pub hourly_rate: f64,
     pub currency: String,
+    pub total_lines_added: u32,
+    pub total_lines_deleted: u32,
 }
 
 impl ClientReport {

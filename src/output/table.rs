@@ -24,6 +24,7 @@ pub fn print_client_report(report: &ClientReport) {
             Cell::new("Sesiones").fg(Color::Cyan),
             Cell::new("Horas").fg(Color::Cyan),
             Cell::new("Commits").fg(Color::Cyan),
+            Cell::new("+/-").fg(Color::Cyan),
             Cell::new("Repos").fg(Color::Cyan),
         ]);
 
@@ -33,6 +34,8 @@ pub fn print_client_report(report: &ClientReport) {
             Cell::new(day.sessions.len().to_string()).set_alignment(CellAlignment::Right),
             Cell::new(format_duration(day.total_minutes)).set_alignment(CellAlignment::Right),
             Cell::new(day.total_commits.to_string()).set_alignment(CellAlignment::Right),
+            Cell::new(format!("+{} -{}", day.total_lines_added, day.total_lines_deleted))
+                .set_alignment(CellAlignment::Right),
             Cell::new(day.repos.join(", ")),
         ]);
     }
@@ -48,6 +51,9 @@ pub fn print_client_report(report: &ClientReport) {
             .set_alignment(CellAlignment::Right)
             .fg(Color::Yellow),
         Cell::new(report.total_commits.to_string())
+            .set_alignment(CellAlignment::Right)
+            .fg(Color::Yellow),
+        Cell::new(format!("+{} -{}", report.total_lines_added, report.total_lines_deleted))
             .set_alignment(CellAlignment::Right)
             .fg(Color::Yellow),
         Cell::new("").fg(Color::Yellow),
@@ -104,19 +110,27 @@ pub fn print_verify_report(report: &ClientReport) {
 
         for (i, session) in day.sessions.iter().enumerate() {
             println!(
-                "  Sesión {}:  {} → {}  ({}, {} commits)",
+                "  Sesión {}:  {} → {}  ({}, {} commits, +{} -{})",
                 i + 1,
                 session.start.format("%H:%M"),
                 session.end.format("%H:%M"),
                 format_duration(session.duration_minutes),
-                session.commits.len()
+                session.commits.len(),
+                session.lines_added,
+                session.lines_deleted
             );
             for commit in &session.commits {
+                let volume = if commit.lines_added + commit.lines_deleted > 0 {
+                    format!(" (+{} -{})", commit.lines_added, commit.lines_deleted)
+                } else {
+                    String::new()
+                };
                 println!(
-                    "    {} {} {}",
+                    "    {} {} {}{}",
                     commit.author_date.format("%H:%M").to_string().dimmed(),
                     &commit.hash[..7].yellow(),
-                    commit.subject
+                    commit.subject,
+                    volume.dimmed()
                 );
             }
         }

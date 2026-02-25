@@ -38,7 +38,7 @@ pub fn analyze(mut commits: Vec<Commit>, settings: &Settings) -> Vec<Session> {
 
         if crosses_midnight || long_gap {
             // Finalize current session
-            let session = build_session(current_commits, current_minutes);
+            let session = build_session(current_commits, current_minutes, settings);
             sessions.push(session);
 
             // Start new session
@@ -53,14 +53,14 @@ pub fn analyze(mut commits: Vec<Commit>, settings: &Settings) -> Vec<Session> {
 
     // Finalize last session
     if !current_commits.is_empty() {
-        let session = build_session(current_commits, current_minutes);
+        let session = build_session(current_commits, current_minutes, settings);
         sessions.push(session);
     }
 
     sessions
 }
 
-fn build_session(commits: Vec<Commit>, duration_minutes: u32) -> Session {
+fn build_session(commits: Vec<Commit>, duration_minutes: u32, settings: &Settings) -> Session {
     let start = commits.first().unwrap().author_date;
     let end = commits.last().unwrap().author_date;
 
@@ -69,12 +69,30 @@ fn build_session(commits: Vec<Commit>, duration_minutes: u32) -> Session {
     repos.sort();
     repos.dedup();
 
+    let lines_added: u32 = commits.iter().map(|c| c.lines_added).sum();
+    let lines_deleted: u32 = commits.iter().map(|c| c.lines_deleted).sum();
+
+    let volume_bonus = if settings.volume_adjustment {
+        let mut bonus = 0.0_f64;
+        for commit in &commits {
+            let total_lines = (commit.lines_added + commit.lines_deleted) as f64;
+            if total_lines > 0.0 {
+                bonus += settings.volume_factor * (1.0 + total_lines / settings.volume_scale).ln();
+            }
+        }
+        bonus.round() as u32
+    } else {
+        0
+    };
+
     Session {
         start,
         end,
-        duration_minutes,
+        duration_minutes: duration_minutes + volume_bonus,
         commits,
         repos,
+        lines_added,
+        lines_deleted,
     }
 }
 
@@ -91,6 +109,8 @@ pub fn group_by_day(sessions: Vec<Session>) -> Vec<DayReport> {
         .map(|(date, day_sessions)| {
             let total_minutes = day_sessions.iter().map(|s| s.duration_minutes).sum();
             let total_commits = day_sessions.iter().map(|s| s.commits.len()).sum();
+            let total_lines_added = day_sessions.iter().map(|s| s.lines_added).sum();
+            let total_lines_deleted = day_sessions.iter().map(|s| s.lines_deleted).sum();
             let mut repos: Vec<String> = day_sessions
                 .iter()
                 .flat_map(|s| s.repos.iter().cloned())
@@ -104,6 +124,8 @@ pub fn group_by_day(sessions: Vec<Session>) -> Vec<DayReport> {
                 total_minutes,
                 total_commits,
                 repos,
+                total_lines_added,
+                total_lines_deleted,
             }
         })
         .collect()
@@ -124,6 +146,8 @@ mod tests {
             subject: format!("commit {}", hash),
             repo_path: PathBuf::from(format!("/repos/{}", repo)),
             repo_name: repo.to_string(),
+            lines_added: 0,
+            lines_deleted: 0,
         }
     }
 
@@ -133,6 +157,9 @@ mod tests {
             first_commit_minutes: 30,
             exclude_weekends: false,
             bot_authors: vec![],
+            volume_adjustment: false,
+            volume_factor: 5.0,
+            volume_scale: 50.0,
         }
     }
 

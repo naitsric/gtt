@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 use chrono::{DateTime, FixedOffset};
 use anyhow::Result;
@@ -16,6 +17,8 @@ pub struct Commit {
     #[allow(dead_code)]
     pub repo_path: PathBuf,
     pub repo_name: String,
+    pub lines_added: u32,
+    pub lines_deleted: u32,
 }
 
 /// Parse raw git log output (NUL-separated records ending with END).
@@ -67,10 +70,57 @@ pub fn parse_git_log(raw: &str, repo_path: &Path, bot_authors: &[String]) -> Res
             subject,
             repo_path: repo_path.to_path_buf(),
             repo_name: repo_name.clone(),
+            lines_added: 0,
+            lines_deleted: 0,
         });
     }
 
     Ok(commits)
+}
+
+/// Parse `git log --format=%H --numstat` output into a map of hash → (added, deleted).
+pub fn parse_numstat(raw: &str) -> HashMap<String, (u32, u32)> {
+    let mut map: HashMap<String, (u32, u32)> = HashMap::new();
+    let mut current_hash: Option<String> = None;
+
+    for line in raw.lines() {
+        let line = line.trim();
+        if line.is_empty() {
+            continue;
+        }
+
+        // Try numstat line: added\tdeleted\tfilename (tab-separated, 3+ fields)
+        let parts: Vec<&str> = line.splitn(3, '\t').collect();
+        if parts.len() == 3 {
+            if let (Ok(added), Ok(deleted)) = (parts[0].parse::<u32>(), parts[1].parse::<u32>()) {
+                if let Some(ref hash) = current_hash {
+                    let entry = map.entry(hash.clone()).or_insert((0, 0));
+                    entry.0 += added;
+                    entry.1 += deleted;
+                }
+                continue;
+            }
+            // Binary files show "-\t-\tfilename" — parse fails, fall through to hash check
+        }
+
+        // If not numstat, treat as a hash line (hex chars, at least 4)
+        if line.len() >= 4 && line.chars().all(|c| c.is_ascii_hexdigit()) {
+            current_hash = Some(line.to_string());
+            map.entry(line.to_string()).or_insert((0, 0));
+        }
+    }
+
+    map
+}
+
+/// Merge numstat data into already-parsed commits by hash.
+pub fn merge_numstat(commits: &mut [Commit], numstat: &HashMap<String, (u32, u32)>) {
+    for commit in commits.iter_mut() {
+        if let Some(&(added, deleted)) = numstat.get(&commit.hash) {
+            commit.lines_added = added;
+            commit.lines_deleted = deleted;
+        }
+    }
 }
 
 fn is_bot(name: &str, email: &str, bot_authors: &[String]) -> bool {
